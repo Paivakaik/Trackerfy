@@ -1,0 +1,59 @@
+:root {
+  --bg: #000000;
+  --bg-elevated: #0e0e0e;
+  --bg-card: #131313;
+  --border: #262626;
+  --text: #f2f2f2;
+  --text-muted: #8f8f8f;
+  --accent: #6c5ce7;
+  --accent-2: #00d4a0;
+  --danger: #ff5c72;
+  --warn: #ffb020;
+  --radius: 12px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+a {
+  color: inherit;
+}
+
+input,
+select,
+button {
+  font-family: inherit;
+  font-size: 14px;
+}
+
+button {
+  cursor: pointer;
+}
+
+::selection {
+  background: var(--accent);
+  color: white;
+}
+
+.scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scrollbar::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 8px;
+}

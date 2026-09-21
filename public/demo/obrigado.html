@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Obrigado (demo) — Curso X</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, sans-serif; background: #0b0f17; color: #e7ecf3; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+    .card { max-width: 420px; padding: 40px; text-align: center; }
+    h1 { font-size: 26px; color: #00d4a0; }
+    p { color: #8a95a8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Compra confirmada! 🎉</h1>
+    <p>Obrigado pela sua compra. Este evento de venda já foi registrado no Trackfy.</p>
+    <p style="font-size: 12px; margin-top: 20px;">
+      Dica: use <code>?method=pix|card|boleto</code> e <code>?status=paid|pending|refunded|chargeback</code>
+      na URL para simular cenários diferentes no Resumo.
+    </p>
+  </div>
+
+  <script
+    src="/track.js"
+    data-product="demo-produto"
+    data-api="/api/track"
+  ></script>
+  <script>
+    window.addEventListener("load", function () {
+      var params = new URLSearchParams(window.location.search);
+      var methods = ["pix", "card", "boleto"];
+      var method = params.get("method") || methods[Math.floor(Math.random() * methods.length)];
+      var status = params.get("status") || "paid";
+
+      trackfy("purchase", {
+        value: 97.0,
+        payment_method: method,
+        status: status,
+        tax: status === "paid" ? 4.85 : undefined,
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,63 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Product {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  createdAt DateTime @default(now())
+
+  events   Event[]
+  adSpends AdSpend[]
+}
+
+// SQLite não suporta enums nativos no Prisma; "type" é restrito em código a
+// CLICK | PAGE_VIEW | INITIATE_CHECKOUT | PURCHASE (ver src/lib/types.ts).
+// saleStatus / paymentMethod só se aplicam a eventos do tipo PURCHASE:
+// saleStatus: PAID | PENDING | REFUNDED | CHARGEBACK (padrão PAID)
+// paymentMethod: PIX | CARD | BOLETO | OTHER (padrão OTHER)
+model Event {
+  id            String    @id @default(cuid())
+  productId     String
+  product       Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  type          String
+  sessionId     String
+  value         Float?
+  taxAmount     Float?
+  saleStatus    String?
+  paymentMethod String?
+  url           String?
+  referrer      String?
+  utmSource     String?
+  utmMedium     String?
+  utmCampaign   String?
+  utmContent    String?
+  adAccount     String?
+  createdAt     DateTime  @default(now())
+
+  @@index([productId, type, createdAt])
+  @@index([productId, utmCampaign])
+  @@index([productId, utmSource])
+  @@index([productId, adAccount])
+  @@index([sessionId])
+}
+
+model AdSpend {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  campaign    String   @default("__all__")
+  periodStart DateTime
+  periodEnd   DateTime
+  amount      Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([productId, campaign, periodStart, periodEnd])
+}
