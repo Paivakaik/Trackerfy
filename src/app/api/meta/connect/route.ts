@@ -19,9 +19,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(url);
   };
 
-  if (!process.env.META_APP_ID || !process.env.META_APP_SECRET) {
+  if (!process.env.META_APP_ID || !process.env.META_APP_SECRET || !process.env.META_CONFIG_ID) {
     return dashboardError(
-      "META_APP_ID / META_APP_SECRET não configurados no servidor. Veja o README (Conectar Meta Ads) para o passo a passo."
+      "META_APP_ID / META_APP_SECRET / META_CONFIG_ID não configurados no servidor. Veja o README (Conectar Meta Ads) para o passo a passo."
     );
   }
 

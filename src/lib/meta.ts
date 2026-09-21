@@ -12,14 +12,20 @@ export function getMetaRedirectUri(): string {
   return `${base.replace(/\/$/, "")}/api/meta/callback`;
 }
 
+// Usa o fluxo "Login do Facebook para Empresas": as permissões (ads_read)
+// ficam definidas na configuração (config_id) criada no painel da Meta, em
+// vez de virem via parâmetro "scope" (fluxo clássico, que exige o produto
+// "Facebook Login" tradicional — apps novos só ganham a variante "para
+// Empresas").
 export function buildMetaAuthUrl(state: string): string {
   const appId = requireEnv("META_APP_ID");
+  const configId = requireEnv("META_CONFIG_ID");
   const params = new URLSearchParams({
     client_id: appId,
     redirect_uri: getMetaRedirectUri(),
     state,
-    scope: "ads_read,public_profile",
     response_type: "code",
+    config_id: configId,
   });
   return `https://www.facebook.com/${GRAPH_VERSION}/dialog/oauth?${params.toString()}`;
 }

@@ -220,15 +220,22 @@ filtro. O total "todas as campanhas" funciona sempre, independente do nome bater
 Isso só você consegue fazer (é a sua conta):
 
 1. Acesse [developers.facebook.com/apps](https://developers.facebook.com/apps) → **Criar
-   app** → tipo **Nenhuma** ou **Empresa** → dê um nome (ex: "Trackfy").
-2. No painel do App, adicione o produto **Marketing API** (Adicionar produto → Marketing
-   API → Configurar).
-3. Em **Configurações → Básico**, copie o **ID do aplicativo** e a **Chave secreta do
-   aplicativo**.
-4. Em **Marketing API → Configurações** (ou **Facebook Login → Configurações**, dependendo
-   da versão do painel), adicione como **URI de redirecionamento OAuth válido**:
-   `https://SEU-DOMINIO.vercel.app/api/meta/callback` (troque pelo seu domínio real).
-5. Como você vai conectar a sua própria conta de anúncios (não a de terceiros), não
+   app** → dê um nome (ex: "Trackfy").
+2. No painel do App, em **Casos de uso**, adicione **"Mensurar dados de desempenho do
+   anúncio com a API de Marketing"**.
+3. Em **Configurações do app → Básico**:
+   - Copie o **ID do aplicativo** e a **Chave secreta do aplicativo** (clique em "Mostrar" —
+     pede a sua senha do Facebook).
+   - Em **Domínios do aplicativo**, adicione `SEU-DOMINIO.vercel.app` (sem `https://`).
+4. Em **Configurações do app → Avançado**, no campo **Autorizar URL de retorno de
+   chamada**, adicione: `https://SEU-DOMINIO.vercel.app/api/meta/callback`.
+5. Apps novos da Meta só vêm com o produto **"Login do Facebook para Empresas"** (não o
+   clássico) — por isso é preciso criar uma **Configuração**: menu lateral **Login do
+   Facebook para Empresas → Configurações → Criar configuração**. Dê um nome, escolha
+   variação **Geral**, tipo de token **"Token de acesso do usuário"**, e na permissão
+   selecione **ads_read**. Ao criar, a Meta mostra a **Identificação da configuração** —
+   copie esse número, é o `META_CONFIG_ID`.
+6. Como você vai conectar a sua própria conta de anúncios (não a de terceiros), não
    precisa passar pela revisão do app (App Review) — funciona em modo de desenvolvimento
    contanto que o usuário do Facebook que conectar seja admin do App e tenha acesso à
    conta de anúncios.
@@ -241,6 +248,7 @@ Na Vercel (Settings → Environment Variables) e no seu `.env` local:
 |---|---|
 | `META_APP_ID` | o ID do aplicativo do passo 1 |
 | `META_APP_SECRET` | a chave secreta do passo 1 |
+| `META_CONFIG_ID` | a identificação da configuração do passo 5 |
 | `CRON_SECRET` | qualquer valor aleatório (`openssl rand -base64 32`) |
 
 Depois de adicionar na Vercel, redeploy (qualquer novo `git push` já dispara um).
