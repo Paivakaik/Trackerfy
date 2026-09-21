@@ -266,3 +266,19 @@ primeira sincronização roda na hora.
 - No plano Hobby da Vercel, o cron automático roda **uma vez por dia**. Isso é reforçado
   por uma sincronização automática ao abrir o dashboard (se a última tiver mais de 1h), e
   por um botão "Sincronizar agora" para forçar na hora.
+
+### Alternativa: colar um token manualmente
+
+Alguns apps criados recentemente (só com "Login do Facebook para Empresas") retornam o erro
+"o domínio dessa URL não está incluído nos domínios do app" mesmo com `Domínios do
+aplicativo`, `Autorizar URL de retorno de chamada` e uma plataforma "Website" configurados
+corretamente — parece uma restrição da Meta específica desse tipo de app/config. Se isso
+acontecer, use o caminho alternativo sem redirecionamento OAuth:
+
+1. No painel do App → **Casos de uso → Personalizar → Ferramentas**, use **"Obter token de
+   acesso"**, marque a permissão `ads_read` e gere o token (como é a sua própria conta, não
+   precisa de App Review).
+2. No dashboard do Trackfy, clique em "ou colar um token de acesso manualmente", cole o
+   token e confirme.
+3. O servidor troca automaticamente por um token de vida longa (~60 dias) e carrega as
+   contas de anúncio disponíveis para você escolher, igual ao fluxo normal.
