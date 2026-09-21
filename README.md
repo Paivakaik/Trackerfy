@@ -266,3 +266,25 @@ primeira sincronização roda na hora.
 - No plano Hobby da Vercel, o cron automático roda **uma vez por dia**. Isso é reforçado
   por uma sincronização automática ao abrir o dashboard (se a última tiver mais de 1h), e
   por um botão "Sincronizar agora" para forçar na hora.
+
+## Conectar Lastlink (vendas automáticas)
+
+Se o checkout roda num domínio externo (Lastlink), o `track.js` sozinho não vê a venda
+acontecer — só o clique em "comprar" (Initiate Checkout). Pra fechar o funil, use o webhook
+nativo do Lastlink:
+
+1. No painel do Lastlink, dentro do produto: **Integrações e ferramentas → Lastlink -
+   Webhook → Editar** (ou "Ativar", se ainda não existir).
+2. Em **URL**, coloque:
+   `https://SEU-DOMINIO.vercel.app/api/webhooks/lastlink?token=SEU_TOKEN&product=slug-do-produto`
+   — `SEU_TOKEN` é o token mostrado nessa mesma tela do Lastlink (copie e use exatamente
+   igual na env var abaixo), e `slug-do-produto` é o slug do produto já cadastrado no
+   Trackfy.
+3. Em **Eventos**, marque pelo menos: `Purchase_Order_Confirmed`, `Purchase_Request_Confirmed`,
+   `Payment_Refund`, `Payment_Chargeback` (e `Recurrent_Payment` se o produto for recorrente).
+4. Adicione a env var `LASTLINK_WEBHOOK_TOKEN` (na Vercel e no seu `.env` local) com o
+   mesmo valor do token do passo 2.
+
+Cada venda é identificada pelo `PaymentId` do Lastlink e vira uma linha só no funil, que é
+atualizada conforme o status muda (pendente → pago → reembolsado/chargeback) — não conta a
+mesma venda duas vezes.
