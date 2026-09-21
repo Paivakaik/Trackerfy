@@ -12,7 +12,7 @@ Ferramenta própria de rastreamento de funil/vendas (estilo Utmify) para produto
    `ad_account` (opcional, via `?ad_account=` na URL) e um `session_id` persistido em
    `localStorage`, para seguir a mesma pessoa do clique até a compra.
 
-2. **Backend com API** (`src/app/api/*`) em Next.js, salvando em SQLite via Prisma. Suporta
+2. **Backend com API** (`src/app/api/*`) em Next.js, salvando em Postgres via Prisma. Suporta
    vários produtos/ofertas ao mesmo tempo — cada evento é associado a um produto pelo campo
    `data-product` do script.
 
@@ -36,31 +36,39 @@ Ferramenta própria de rastreamento de funil/vendas (estilo Utmify) para produto
 npm install
 ```
 
-### 2. Configurar variáveis de ambiente
+### 2. Ter um banco Postgres
 
-Já existe um `.env` com valores padrão para teste local:
+O projeto usa Postgres (necessário para rodar na Vercel — veja a seção **Deploy na Vercel**
+abaixo). Para desenvolvimento local, a forma mais rápida é criar um banco **gratuito** no
+[Neon](https://neon.tech) (ou usar o mesmo banco que você já criou na Vercel, se já tiver
+feito o deploy — ver abaixo): crie a conta, crie um projeto, copie a "Connection string".
 
-- `ADMIN_USER=admin`
-- `ADMIN_PASSWORD=admin123`
+### 3. Configurar variáveis de ambiente
+
+Edite o `.env` (já existe um com valores de exemplo):
+
+```bash
+DATABASE_URL="postgresql://..."   # cole a connection string do Neon aqui
+ADMIN_USER="paiva"
+ADMIN_PASSWORD="Kaiklindo1234"
+```
 
 **Troque essas credenciais antes de expor o projeto fora da sua máquina.**
 
-### 3. Criar o banco de dados SQLite
+### 4. Criar as tabelas no banco
 
 ```bash
 npx prisma db push
 ```
 
-Isso cria o arquivo `prisma/dev.db` com as tabelas.
-
-### 4. Rodar o servidor
+### 5. Rodar o servidor
 
 ```bash
 npm run dev
 ```
 
 Acesse [http://localhost:3000](http://localhost:3000) — você será redirecionado para o
-login. Entre com `admin` / `admin123`.
+login. Entre com `paiva` / `Kaiklindo1234`.
 
 ## Testando o funil ponta a ponta (sem precisar da sua página real ainda)
 
@@ -135,10 +143,58 @@ mostra visitantes que abriram a página mas saíram antes dela carregar por comp
 você já usa um link de redirecionamento/cloaker antes da página de vendas, dá para me
 pedir para conectar essa camada como uma etapa de clique "de verdade" depois.
 
-## Próximos passos (quando quiser subir pra produção)
+## Deploy na Vercel
 
-- Trocar `ADMIN_USER`/`ADMIN_PASSWORD` por algo forte e gerar um novo `NEXTAUTH_SECRET`.
-- Trocar o SQLite por Postgres (Prisma facilita: troca o `provider` no
-  `prisma/schema.prisma` e a `DATABASE_URL`, roda `npx prisma migrate dev`).
-- Hospedar em algo como Vercel/Railway/Fly.io e apontar `data-api` do script para o domínio
-  de produção.
+O projeto (repositório [Paivakaik/Trackerfy](https://github.com/Paivakaik/Trackerfy)) já
+está conectado à Vercel, mas o primeiro deploy falha (`404: DEPLOYMENT_NOT_FOUND`) porque
+faltam as variáveis de ambiente — sem elas, o build quebra logo no `prisma generate`. Para
+corrigir:
+
+### 1. Criar o banco Postgres
+
+No painel da Vercel, dentro do projeto **Trackerfy**: aba **Storage** → **Create Database**
+→ **Postgres** (é o Neon por baixo dos panos, tem plano gratuito). Depois de criado, a
+Vercel já oferece para conectar automaticamente ao projeto — aceite. Isso cria a variável
+`DATABASE_URL` sozinha (às vezes com outro nome, tipo `POSTGRES_PRISMA_URL` — se for o
+caso, copie o valor dela para uma variável chamada exatamente `DATABASE_URL`, que é o nome
+que o `prisma/schema.prisma` espera).
+
+### 2. Configurar as demais variáveis de ambiente
+
+Ainda no projeto, aba **Settings → Environment Variables**, adicione (para o ambiente
+Production, e Preview se quiser testar branches):
+
+| Nome | Valor |
+|---|---|
+| `ADMIN_USER` | `paiva` |
+| `ADMIN_PASSWORD` | `Kaiklindo1234` |
+| `NEXTAUTH_SECRET` | gere um valor com `openssl rand -base64 32` (ou peça pra mim) |
+| `NEXTAUTH_URL` | `https://trackerfy-eight.vercel.app` (ou o domínio final do projeto) |
+
+`DATABASE_URL` já deve estar lá pelo passo 1.
+
+### 3. Criar as tabelas no banco de produção
+
+Com o `DATABASE_URL` de produção também no seu `.env` local (ou exportado no terminal),
+rode uma vez:
+
+```bash
+npx prisma db push
+```
+
+Isso cria as tabelas no banco Postgres que a Vercel vai usar.
+
+### 4. Rodar o deploy de novo
+
+Aba **Deployments** → nos três pontinhos do último deploy (o que falhou) → **Redeploy**.
+Ou simplesmente faça um novo `git push` — qualquer commit novo na branch `main` já dispara
+um deploy automático.
+
+Depois disso, `https://trackerfy-eight.vercel.app` deve abrir a tela de login normalmente,
+com `paiva` / `Kaiklindo1234`.
+
+### 5. Apontar o script de rastreamento pra produção
+
+Depois que o site estiver no ar, troque `data-api` e `src` no snippet de instalação (veja
+"Como instalar o script neste produto" no dashboard) para o domínio de produção em vez de
+`localhost:3000`.

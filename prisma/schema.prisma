@@ -1,5 +1,5 @@
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -17,8 +17,8 @@ model Product {
   adSpends AdSpend[]
 }
 
-// SQLite não suporta enums nativos no Prisma; "type" é restrito em código a
-// CLICK | PAGE_VIEW | INITIATE_CHECKOUT | PURCHASE (ver src/lib/types.ts).
+// "type" é restrito em código a CLICK | PAGE_VIEW | INITIATE_CHECKOUT | PURCHASE
+// (ver src/lib/types.ts).
 // saleStatus / paymentMethod só se aplicam a eventos do tipo PURCHASE:
 // saleStatus: PAID | PENDING | REFUNDED | CHARGEBACK (padrão PAID)
 // paymentMethod: PIX | CARD | BOLETO | OTHER (padrão OTHER)
