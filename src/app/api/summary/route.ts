@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/requireSession";
 import { resolvePeriod, PeriodKey } from "@/lib/dateRanges";
+import { getAdSpendTotal } from "@/lib/adspend";
 
 export async function GET(req: NextRequest) {
   const { response } = await requireSession();
@@ -30,19 +31,12 @@ export async function GET(req: NextRequest) {
     ...(adAccount ? { adAccount: adAccount } : {}),
   };
 
-  const [purchases, adSpendRow] = await Promise.all([
+  const [purchases, spend] = await Promise.all([
     prisma.event.findMany({
       where,
       select: { value: true, taxAmount: true, saleStatus: true, paymentMethod: true },
     }),
-    prisma.adSpend.findFirst({
-      where: {
-        productId,
-        campaign: campaign ?? "__all__",
-        periodStart: start,
-        periodEnd: end,
-      },
-    }),
+    getAdSpendTotal(productId, campaign, start, end),
   ]);
 
   const paid = purchases.filter((p) => p.saleStatus === "paid");
@@ -56,7 +50,6 @@ export async function GET(req: NextRequest) {
   const pendingRevenue = sum(pending.map((p) => p.value));
   const refundedRevenue = sum(refunded.map((p) => p.value));
 
-  const spend = adSpendRow?.amount ?? 0;
   const profit = netRevenue - spend;
   const roas = spend > 0 ? netRevenue / spend : null;
   const roi = spend > 0 ? (profit / spend) * 100 : null;

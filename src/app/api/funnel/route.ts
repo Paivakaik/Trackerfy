@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/requireSession";
 import { resolvePeriod, PeriodKey } from "@/lib/dateRanges";
+import { getAdSpendTotal } from "@/lib/adspend";
 
 export async function GET(req: NextRequest) {
   const { response } = await requireSession();
@@ -76,16 +77,7 @@ export async function GET(req: NextRequest) {
     { key: "purchase", label: "Vendas", count: purchases, pct: pct(purchases) },
   ];
 
-  const adSpendRow = await prisma.adSpend.findFirst({
-    where: {
-      productId,
-      campaign: campaign ?? "__all__",
-      periodStart: start,
-      periodEnd: end,
-    },
-  });
-
-  const spend = adSpendRow?.amount ?? 0;
+  const spend = await getAdSpendTotal(productId, campaign, start, end);
   const costPerSale = purchases > 0 && spend > 0 ? spend / purchases : null;
 
   return NextResponse.json({

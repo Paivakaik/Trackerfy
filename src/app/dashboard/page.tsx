@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import ProductSidebar from "@/components/dashboard/ProductSidebar";
 import FiltersBar from "@/components/dashboard/FiltersBar";
 import FunnelChart from "@/components/dashboard/FunnelChart";
 import AdSpendCard from "@/components/dashboard/AdSpendCard";
 import SummaryCards from "@/components/dashboard/SummaryCards";
+import MetaConnect from "@/components/dashboard/MetaConnect";
 import InstallSnippet from "@/components/dashboard/InstallSnippet";
 import type { Product, PeriodKey, FunnelResponse, SummaryResponse } from "@/lib/types";
 
@@ -14,6 +16,17 @@ function todayISO() {
 }
 
 export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div style={{ color: "var(--text-muted)" }}>Carregando...</div>}>
+      <DashboardInner />
+    </Suspense>
+  );
+}
+
+function DashboardInner() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [period, setPeriod] = useState<PeriodKey>("7d");
@@ -29,15 +42,40 @@ export default function DashboardPage() {
   const [summary, setSummary] = useState<SummaryResponse | null>(null);
   const [loadingProducts, setLoadingProducts] = useState(true);
 
+  const returnedProductId = searchParams.get("productId");
+  const metaConnected = searchParams.get("metaConnected") === "1";
+  const metaError = searchParams.get("metaError");
+
   useEffect(() => {
     fetch("/api/products")
       .then((r) => r.json())
       .then((data) => {
-        setProducts(data.products || []);
-        if (data.products?.length) setSelectedId(data.products[0].id);
+        const list: Product[] = data.products || [];
+        setProducts(list);
+        if (returnedProductId && list.some((p) => p.id === returnedProductId)) {
+          setSelectedId(returnedProductId);
+        } else if (list.length) {
+          setSelectedId(list[0].id);
+        }
       })
       .finally(() => setLoadingProducts(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Limpa os parâmetros de retorno do OAuth da URL depois de consumi-los, pra
+  // não reprocessar se a pessoa der refresh na página. Só roda depois que os
+  // produtos carregarem (loadingProducts=false), pra garantir que o
+  // MetaConnect já montou e leu metaConnected/metaError antes deles sumirem
+  // da URL — senão a mensagem de erro nunca chega a aparecer.
+  useEffect(() => {
+    if (!loadingProducts && (metaConnected || metaError)) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("metaConnected");
+      url.searchParams.delete("metaError");
+      router.replace(url.pathname + url.search);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingProducts]);
 
   useEffect(() => {
     if (!selectedId) return;
@@ -144,6 +182,16 @@ export default function DashboardPage() {
               adAccounts={adAccounts}
               adAccount={adAccount}
               onAdAccountChange={setAdAccount}
+            />
+
+            <MetaConnect
+              productId={selectedProduct.id}
+              justConnected={metaConnected}
+              connectError={metaError}
+              onSynced={() => {
+                loadFunnel();
+                loadSummary();
+              }}
             />
 
             <AdSpendCard

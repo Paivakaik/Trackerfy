@@ -13,8 +13,9 @@ model Product {
   name      String
   createdAt DateTime @default(now())
 
-  events   Event[]
-  adSpends AdSpend[]
+  events        Event[]
+  adSpends      AdSpend[]
+  adConnections AdConnection[]
 }
 
 // "type" é restrito em código a CLICK | PAGE_VIEW | INITIATE_CHECKOUT | PURCHASE
@@ -48,6 +49,11 @@ model Event {
   @@index([sessionId])
 }
 
+// source: "manual" (lançado pelo usuário no dashboard) | "meta" (sincronizado
+// automaticamente da Meta Ads API). Entradas "meta" são sempre diárias
+// (periodStart = periodEnd = o dia). O gasto exibido no dashboard é a SOMA de
+// todas as linhas cujo período cai dentro do período selecionado, então as
+// duas origens se somam naturalmente sem conflito.
 model AdSpend {
   id          String   @id @default(cuid())
   productId   String
@@ -56,8 +62,31 @@ model AdSpend {
   periodStart DateTime
   periodEnd   DateTime
   amount      Float
+  source      String   @default("manual")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@unique([productId, campaign, periodStart, periodEnd])
+  @@unique([productId, campaign, periodStart, periodEnd, source])
+}
+
+// Conexão de uma conta de anúncios (Meta Ads) a um produto, para sincronizar
+// o gasto automaticamente. accessToken é um token de usuário de vida longa
+// (~60 dias) — a Meta não oferece refresh silencioso, então quando expira o
+// usuário precisa reconectar pelo dashboard.
+model AdConnection {
+  id             String    @id @default(cuid())
+  productId      String
+  product        Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  platform       String    @default("meta")
+  accessToken    String
+  tokenExpiresAt DateTime?
+  metaUserId     String?
+  adAccountId    String?
+  adAccountName  String?
+  lastSyncedAt   DateTime?
+  lastSyncError  String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([productId, platform])
 }

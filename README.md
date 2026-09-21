@@ -28,6 +28,10 @@ Ferramenta própria de rastreamento de funil/vendas (estilo Utmify) para produto
      cards de Resumo (ROAS, Lucro, ROI, custo por venda etc.) são calculados automaticamente
      a partir disso.
 
+4. **Conector Meta Ads** — conecte a conta de anúncios (Facebook/Instagram) que roda suas
+   campanhas e o gasto por campanha é sincronizado automaticamente (ao abrir o dashboard e
+   uma vez por dia via cron), sem precisar lançar na mão. Veja "Conectar Meta Ads" abaixo.
+
 ## Rodando local
 
 ### 1. Instalar dependências
@@ -198,3 +202,59 @@ com `paiva` / `Kaiklindo1234`.
 Depois que o site estiver no ar, troque `data-api` e `src` no snippet de instalação (veja
 "Como instalar o script neste produto" no dashboard) para o domínio de produção em vez de
 `localhost:3000`.
+
+## Conectar Meta Ads (gasto automático)
+
+Em cada produto, o dashboard tem uma linha "Meta Ads" com um botão **Conectar conta de
+anúncios** — depois de conectado, o gasto por campanha é sincronizado sozinho (a cada
+abertura do dashboard, se fizer mais de 1h da última sincronização, e também uma vez por
+dia via cron), sem precisar mais lançar manualmente. O campo de lançamento manual continua
+existindo, para somar gasto de outras fontes de tráfego.
+
+**Importante:** o nome da campanha na Meta precisa ser igual ao valor que você usa em
+`utm_campaign` nos seus links de anúncio, para o gasto por campanha bater certinho no
+filtro. O total "todas as campanhas" funciona sempre, independente do nome bater.
+
+### 1. Criar o App na Meta
+
+Isso só você consegue fazer (é a sua conta):
+
+1. Acesse [developers.facebook.com/apps](https://developers.facebook.com/apps) → **Criar
+   app** → tipo **Nenhuma** ou **Empresa** → dê um nome (ex: "Trackfy").
+2. No painel do App, adicione o produto **Marketing API** (Adicionar produto → Marketing
+   API → Configurar).
+3. Em **Configurações → Básico**, copie o **ID do aplicativo** e a **Chave secreta do
+   aplicativo**.
+4. Em **Marketing API → Configurações** (ou **Facebook Login → Configurações**, dependendo
+   da versão do painel), adicione como **URI de redirecionamento OAuth válido**:
+   `https://SEU-DOMINIO.vercel.app/api/meta/callback` (troque pelo seu domínio real).
+5. Como você vai conectar a sua própria conta de anúncios (não a de terceiros), não
+   precisa passar pela revisão do app (App Review) — funciona em modo de desenvolvimento
+   contanto que o usuário do Facebook que conectar seja admin do App e tenha acesso à
+   conta de anúncios.
+
+### 2. Configurar as variáveis de ambiente
+
+Na Vercel (Settings → Environment Variables) e no seu `.env` local:
+
+| Nome | Valor |
+|---|---|
+| `META_APP_ID` | o ID do aplicativo do passo 1 |
+| `META_APP_SECRET` | a chave secreta do passo 1 |
+| `CRON_SECRET` | qualquer valor aleatório (`openssl rand -base64 32`) |
+
+Depois de adicionar na Vercel, redeploy (qualquer novo `git push` já dispara um).
+
+### 3. Conectar
+
+No dashboard, dentro do produto, clique em **Conectar conta de anúncios**, autorize no
+pop-up da Meta, e escolha qual conta de anúncios usar (se você administra mais de uma). A
+primeira sincronização roda na hora.
+
+### Limitações que você deve saber
+
+- O token de acesso dura cerca de 60 dias — a Meta não oferece renovação silenciosa. Perto
+  de expirar, o dashboard mostra "sessão expirada, reconecte" e é só clicar de novo.
+- No plano Hobby da Vercel, o cron automático roda **uma vez por dia**. Isso é reforçado
+  por uma sincronização automática ao abrir o dashboard (se a última tiver mais de 1h), e
+  por um botão "Sincronizar agora" para forçar na hora.

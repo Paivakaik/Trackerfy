@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   const { start, end } = resolvePeriod(period, from, to);
 
   const row = await prisma.adSpend.findFirst({
-    where: { productId, campaign, periodStart: start, periodEnd: end },
+    where: { productId, campaign, periodStart: start, periodEnd: end, source: "manual" },
   });
 
   return NextResponse.json({ amount: row?.amount ?? 0 });
@@ -48,11 +48,12 @@ export async function POST(req: NextRequest) {
 
   const row = await prisma.adSpend.upsert({
     where: {
-      productId_campaign_periodStart_periodEnd: {
+      productId_campaign_periodStart_periodEnd_source: {
         productId,
         campaign,
         periodStart: start,
         periodEnd: end,
+        source: "manual",
       },
     },
     update: { amount: parsedAmount },
@@ -62,6 +63,7 @@ export async function POST(req: NextRequest) {
       periodStart: start,
       periodEnd: end,
       amount: parsedAmount,
+      source: "manual",
     },
   });
 
