@@ -30,9 +30,6 @@ export default function MetaConnect({
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(connectError);
   const [selecting, setSelecting] = useState(false);
-  const [showManual, setShowManual] = useState(false);
-  const [manualToken, setManualToken] = useState("");
-  const [manualSubmitting, setManualSubmitting] = useState(false);
 
   const loadStatus = useCallback(() => {
     fetch(`/api/meta/status?productId=${productId}`)
@@ -62,30 +59,6 @@ export default function MetaConnect({
     if (justConnected) loadAccounts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [justConnected, productId]);
-
-  async function handleManualConnect() {
-    if (!manualToken.trim()) return;
-    setManualSubmitting(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/meta/manual-connect", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId, token: manualToken.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error);
-      } else {
-        setManualToken("");
-        setShowManual(false);
-        loadStatus();
-        loadAccounts();
-      }
-    } finally {
-      setManualSubmitting(false);
-    }
-  }
 
   // Sincroniza sozinho se já estiver conectado e a última sincronização foi
   // há mais de 1 hora (ou nunca aconteceu) — dá a sensação de "sempre
@@ -258,46 +231,6 @@ export default function MetaConnect({
 
       {error && (
         <div style={{ marginTop: 8, color: "var(--danger)" }}>{error}</div>
-      )}
-
-      {!status?.connected && (
-        <div style={{ marginTop: 10 }}>
-          <button
-            onClick={() => setShowManual((v) => !v)}
-            style={{ ...smallBtnGhost, padding: 0, border: "none", background: "none", textDecoration: "underline" }}
-          >
-            {showManual ? "cancelar" : "ou colar um token de acesso manualmente"}
-          </button>
-          {showManual && (
-            <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
-              <div style={{ color: "var(--text-muted)", fontSize: 12 }}>
-                Gere um token em developers.facebook.com → seu app → Casos de uso → Personalizar → Ferramentas →
-                &quot;Obter token de acesso&quot; (marque a permissão <code>ads_read</code>) e cole aqui.
-              </div>
-              <input
-                type="text"
-                value={manualToken}
-                onChange={(e) => setManualToken(e.target.value)}
-                placeholder="EAAG..."
-                style={{
-                  padding: "7px 10px",
-                  borderRadius: 6,
-                  border: "1px solid var(--border)",
-                  background: "var(--bg-elevated)",
-                  color: "var(--text)",
-                  fontSize: 12,
-                }}
-              />
-              <button
-                onClick={handleManualConnect}
-                disabled={manualSubmitting || !manualToken.trim()}
-                style={{ ...smallBtnLink, alignSelf: "flex-start" }}
-              >
-                {manualSubmitting ? "Conectando..." : "Conectar com esse token"}
-              </button>
-            </div>
-          )}
-        </div>
       )}
     </div>
   );
