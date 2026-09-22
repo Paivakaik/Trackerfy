@@ -5,6 +5,7 @@ import type { PeriodKey } from "@/lib/types";
 
 const PERIODS: { key: PeriodKey; label: string }[] = [
   { key: "today", label: "Hoje" },
+  { key: "yesterday", label: "Ontem" },
   { key: "7d", label: "7 dias" },
   { key: "30d", label: "30 dias" },
   { key: "custom", label: "Personalizado" },

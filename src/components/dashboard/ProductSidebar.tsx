@@ -3,18 +3,29 @@
 import { useState } from "react";
 import type { Product } from "@/lib/types";
 
+type View = "dashboard" | "settings";
+
+const NAV_ITEMS: { key: View; label: string; icon: string }[] = [
+  { key: "dashboard", label: "Dashboard", icon: "🏠" },
+  { key: "settings", label: "Configurações", icon: "⚙️" },
+];
+
 export default function ProductSidebar({
   products,
   selectedId,
   onSelect,
   onCreated,
   onDeleted,
+  view,
+  onViewChange,
 }: {
   products: Product[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   onCreated: (p: Product) => void;
   onDeleted: (id: string) => void;
+  view: View;
+  onViewChange: (v: View) => void;
 }) {
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
@@ -63,17 +74,49 @@ export default function ProductSidebar({
   }
 
   return (
-    <div
-      style={{
-        width: 240,
-        flexShrink: 0,
-        background: "var(--bg-card)",
-        border: "1px solid var(--border)",
-        borderRadius: 12,
-        padding: 14,
-        height: "fit-content",
-      }}
-    >
+    <div style={{ width: 240, flexShrink: 0, display: "flex", flexDirection: "column", gap: 14 }}>
+      <div
+        style={{
+          background: "var(--bg-card)",
+          border: "1px solid var(--border)",
+          borderRadius: 12,
+          padding: 8,
+        }}
+      >
+        {NAV_ITEMS.map((item) => (
+          <button
+            key={item.key}
+            onClick={() => onViewChange(item.key)}
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              textAlign: "left",
+              padding: "9px 10px",
+              borderRadius: 8,
+              border: "none",
+              background: view === item.key ? "var(--bg-elevated)" : "transparent",
+              color: view === item.key ? "var(--text)" : "var(--text-muted)",
+              fontSize: 14,
+              fontWeight: 500,
+            }}
+          >
+            <span>{item.icon}</span>
+            {item.label}
+          </button>
+        ))}
+      </div>
+
+      <div
+        style={{
+          background: "var(--bg-card)",
+          border: "1px solid var(--border)",
+          borderRadius: 12,
+          padding: 14,
+          height: "fit-content",
+        }}
+      >
       <div
         style={{
           display: "flex",
@@ -200,6 +243,7 @@ export default function ProductSidebar({
             </button>
           </div>
         ))}
+      </div>
       </div>
     </div>
   );

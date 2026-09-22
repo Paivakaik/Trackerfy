@@ -1,4 +1,4 @@
-export type PeriodKey = "today" | "7d" | "30d" | "custom";
+export type PeriodKey = "today" | "yesterday" | "7d" | "30d" | "custom";
 
 // O servidor roda em UTC (Vercel), mas "hoje"/"7 dias"/"30 dias" precisam
 // bater com o dia no fuso do Brasil — senão um evento às 22h em São Paulo já
@@ -42,6 +42,11 @@ export function resolvePeriod(
 
   if (period === "today") {
     return { start: startOfDayBRT(today.y, today.m, today.d), end: endOfDayBRT(today.y, today.m, today.d) };
+  }
+
+  if (period === "yesterday") {
+    const y = shiftDays(today.y, today.m, today.d, -1);
+    return { start: startOfDayBRT(y.y, y.m, y.d), end: endOfDayBRT(y.y, y.m, y.d) };
   }
 
   if (period === "7d") {

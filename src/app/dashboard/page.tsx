@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, Suspense } from "react";
+import { useEffect, useState, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import ProductSidebar from "@/components/dashboard/ProductSidebar";
 import FiltersBar from "@/components/dashboard/FiltersBar";
@@ -48,6 +48,13 @@ function DashboardInner() {
   const [funnel, setFunnel] = useState<FunnelResponse | null>(null);
   const [summary, setSummary] = useState<SummaryResponse | null>(null);
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [view, setView] = useState<"dashboard" | "settings">("dashboard");
+  // Contadores pra ignorar respostas de fetch antigas que chegam depois de
+  // uma mais nova (ex: trocar de produto/período rápido) — sem isso, uma
+  // requisição lenta podia sobrescrever os dados certos com os de um filtro
+  // anterior, fazendo alguma métrica "sumir" às vezes.
+  const funnelReq = useRef(0);
+  const summaryReq = useRef(0);
 
   const returnedProductId = searchParams.get("productId");
   const metaConnected = searchParams.get("metaConnected") === "1";
@@ -116,17 +123,23 @@ function DashboardInner() {
   const loadFunnel = useCallback(() => {
     const params = commonParams();
     if (!params) return;
+    const reqId = ++funnelReq.current;
     fetch(`/api/funnel?${params.toString()}`)
       .then((r) => r.json())
-      .then((data) => setFunnel(data));
+      .then((data) => {
+        if (reqId === funnelReq.current) setFunnel(data);
+      });
   }, [commonParams]);
 
   const loadSummary = useCallback(() => {
     const params = commonParams();
     if (!params) return;
+    const reqId = ++summaryReq.current;
     fetch(`/api/summary?${params.toString()}`)
       .then((r) => r.json())
-      .then((data) => setSummary(data));
+      .then((data) => {
+        if (reqId === summaryReq.current) setSummary(data);
+      });
   }, [commonParams]);
 
   useEffect(() => {
@@ -153,6 +166,8 @@ function DashboardInner() {
             return next;
           });
         }}
+        view={view}
+        onViewChange={setView}
       />
 
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -180,109 +195,119 @@ function DashboardInner() {
               </span>
             </div>
 
-            <FiltersBar
-              period={period}
-              onPeriodChange={setPeriod}
-              from={from}
-              to={to}
-              onFromChange={setFrom}
-              onToChange={setTo}
-              campaigns={campaigns}
-              campaign={campaign}
-              onCampaignChange={setCampaign}
-              platforms={platforms}
-              platform={platform}
-              onPlatformChange={setPlatform}
-              adAccounts={adAccounts}
-              adAccount={adAccount}
-              onAdAccountChange={setAdAccount}
-            />
+            {view === "dashboard" ? (
+              <>
+                <FiltersBar
+                  period={period}
+                  onPeriodChange={setPeriod}
+                  from={from}
+                  to={to}
+                  onFromChange={setFrom}
+                  onToChange={setTo}
+                  campaigns={campaigns}
+                  campaign={campaign}
+                  onCampaignChange={setCampaign}
+                  platforms={platforms}
+                  platform={platform}
+                  onPlatformChange={setPlatform}
+                  adAccounts={adAccounts}
+                  adAccount={adAccount}
+                  onAdAccountChange={setAdAccount}
+                />
 
-            <MetaConnect
-              productId={selectedProduct.id}
-              justConnected={metaConnected}
-              connectError={metaError}
-              onSynced={() => {
-                loadFunnel();
-                loadSummary();
-              }}
-            />
+                <SectionLabel>Resumo</SectionLabel>
+                {summary ? (
+                  <div style={{ marginBottom: 20 }}>
+                    <SummaryCards summary={summary} />
+                  </div>
+                ) : (
+                  <div style={{ color: "var(--text-muted)", marginBottom: 20 }}>Carregando...</div>
+                )}
 
-            <AdSpendCard
-              productId={selectedProduct.id}
-              period={period}
-              from={from}
-              to={to}
-              campaign={campaign}
-              onSaved={() => {
-                loadFunnel();
-                loadSummary();
-              }}
-            />
-
-            <SectionLabel>Resumo</SectionLabel>
-            {summary ? (
-              <div style={{ marginBottom: 20 }}>
-                <SummaryCards summary={summary} />
-              </div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    marginBottom: 8,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: "var(--text-muted)",
+                      letterSpacing: 0.4,
+                    }}
+                  >
+                    FUNIL DE CONVERSÃO
+                  </span>
+                  <span
+                    title="Cliques/Vis. Página/ICs vêm do script instalado no seu site. Vendas Inic./Apr. vêm das vendas registradas (manual, Lastlink etc)."
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 14,
+                      height: 14,
+                      borderRadius: "50%",
+                      border: "1px solid var(--text-muted)",
+                      color: "var(--text-muted)",
+                      fontSize: 10,
+                      cursor: "default",
+                    }}
+                  >
+                    i
+                  </span>
+                </div>
+                <div
+                  style={{
+                    background: "var(--bg-card)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 12,
+                    padding: "16px 16px 8px",
+                    marginBottom: 20,
+                    overflow: "hidden",
+                  }}
+                >
+                  {funnel ? (
+                    <FunnelChart stages={funnel.stages} />
+                  ) : (
+                    <div style={{ color: "var(--text-muted)" }}>Carregando funil...</div>
+                  )}
+                </div>
+              </>
             ) : (
-              <div style={{ color: "var(--text-muted)", marginBottom: 20 }}>Carregando...</div>
+              <>
+                <SectionLabel>Integração com anúncios</SectionLabel>
+                <MetaConnect
+                  productId={selectedProduct.id}
+                  justConnected={metaConnected}
+                  connectError={metaError}
+                  onSynced={() => {
+                    loadFunnel();
+                    loadSummary();
+                  }}
+                />
+
+                <AdSpendCard
+                  productId={selectedProduct.id}
+                  period={period}
+                  from={from}
+                  to={to}
+                  campaign={campaign}
+                  onSaved={() => {
+                    loadFunnel();
+                    loadSummary();
+                  }}
+                />
+
+                <div style={{ marginTop: 20 }}>
+                  <SectionLabel>Instalar script de rastreamento</SectionLabel>
+                  <InstallSnippet slug={selectedProduct.slug} />
+                </div>
+              </>
             )}
-
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                marginBottom: 8,
-              }}
-            >
-              <span
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: "var(--text-muted)",
-                  letterSpacing: 0.4,
-                }}
-              >
-                FUNIL DE CONVERSÃO
-              </span>
-              <span
-                title="Cliques/Vis. Página/ICs vêm do script instalado no seu site. Vendas Inic./Apr. vêm das vendas registradas (manual, Lastlink etc)."
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: 14,
-                  height: 14,
-                  borderRadius: "50%",
-                  border: "1px solid var(--text-muted)",
-                  color: "var(--text-muted)",
-                  fontSize: 10,
-                  cursor: "default",
-                }}
-              >
-                i
-              </span>
-            </div>
-            <div
-              style={{
-                background: "var(--bg-card)",
-                border: "1px solid var(--border)",
-                borderRadius: 12,
-                padding: "16px 16px 8px",
-                marginBottom: 20,
-                overflow: "hidden",
-              }}
-            >
-              {funnel ? (
-                <FunnelChart stages={funnel.stages} />
-              ) : (
-                <div style={{ color: "var(--text-muted)" }}>Carregando funil...</div>
-              )}
-            </div>
-
-            <InstallSnippet slug={selectedProduct.slug} />
           </>
         )}
       </div>

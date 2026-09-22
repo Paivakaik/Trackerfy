@@ -5,7 +5,7 @@ export type Product = {
   createdAt: string;
 };
 
-export type PeriodKey = "today" | "7d" | "30d" | "custom";
+export type PeriodKey = "today" | "yesterday" | "7d" | "30d" | "custom";
 
 export type FunnelStage = {
   key: string;

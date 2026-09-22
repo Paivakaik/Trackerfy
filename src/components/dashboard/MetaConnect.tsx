@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 
 type MetaStatus = {
   connected: boolean;
@@ -30,11 +30,15 @@ export default function MetaConnect({
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(connectError);
   const [selecting, setSelecting] = useState(false);
+  const statusReq = useRef(0);
 
   const loadStatus = useCallback(() => {
+    const reqId = ++statusReq.current;
     fetch(`/api/meta/status?productId=${productId}`)
       .then((r) => r.json())
-      .then((data) => setStatus(data));
+      .then((data) => {
+        if (reqId === statusReq.current) setStatus(data);
+      });
   }, [productId]);
 
   const loadAccounts = useCallback(() => {

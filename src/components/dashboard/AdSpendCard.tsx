@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { PeriodKey } from "@/lib/types";
 
 export default function AdSpendCard({
@@ -22,9 +22,11 @@ export default function AdSpendCard({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState(false);
+  const reqId = useRef(0);
 
   useEffect(() => {
     setLoading(true);
+    const thisReq = ++reqId.current;
     const params = new URLSearchParams({ productId, period, campaign: campaign || "__all__" });
     if (period === "custom") {
       params.set("from", from);
@@ -32,8 +34,12 @@ export default function AdSpendCard({
     }
     fetch(`/api/adspend?${params.toString()}`)
       .then((r) => r.json())
-      .then((data) => setAmount(String(data.amount ?? 0)))
-      .finally(() => setLoading(false));
+      .then((data) => {
+        if (thisReq === reqId.current) setAmount(String(data.amount ?? 0));
+      })
+      .finally(() => {
+        if (thisReq === reqId.current) setLoading(false);
+      });
   }, [productId, period, from, to, campaign]);
 
   async function handleSave() {
