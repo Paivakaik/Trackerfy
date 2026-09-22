@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import type { PeriodKey } from "@/lib/types";
 
 const PERIODS: { key: PeriodKey; label: string }[] = [
@@ -25,23 +26,20 @@ export default function FiltersBar({
   adAccounts,
   adAccount,
   onAdAccountChange,
-}: {
-  period: PeriodKey;
-  onPeriodChange: (p: PeriodKey) => void;
-  from: string;
-  to: string;
-  onFromChange: (v: string) => void;
-  onToChange: (v: string) => void;
-  campaigns: string[];
-  campaign: string;
-  onCampaignChange: (c: string) => void;
-  platforms: string[];
-  platform: string;
-  onPlatformChange: (p: string) => void;
-  adAccounts: string[];
-  adAccount: string;
-  onAdAccountChange: (a: string) => void;
-}) {
+}: FiltersBarProps) {
+  const fromRef = useRef<HTMLInputElement>(null);
+
+  function handlePeriodClick(key: PeriodKey) {
+    onPeriodChange(key);
+    if (key === "custom") {
+      // Abre o calendário nativo direto, em vez de deixar só um campo de
+      // texto parado esperando alguém notar o iconezinho.
+      requestAnimationFrame(() => {
+        fromRef.current?.showPicker?.();
+      });
+    }
+  }
+
   return (
     <div
       style={{
@@ -64,7 +62,7 @@ export default function FiltersBar({
         {PERIODS.map((p) => (
           <button
             key={p.key}
-            onClick={() => onPeriodChange(p.key)}
+            onClick={() => handlePeriodClick(p.key)}
             style={{
               padding: "6px 12px",
               borderRadius: 6,
@@ -83,6 +81,7 @@ export default function FiltersBar({
       {period === "custom" && (
         <>
           <input
+            ref={fromRef}
             type="date"
             value={from}
             onChange={(e) => onFromChange(e.target.value)}
@@ -138,6 +137,24 @@ export default function FiltersBar({
       </select>
     </div>
   );
+}
+
+interface FiltersBarProps {
+  period: PeriodKey;
+  onPeriodChange: (p: PeriodKey) => void;
+  from: string;
+  to: string;
+  onFromChange: (v: string) => void;
+  onToChange: (v: string) => void;
+  campaigns: string[];
+  campaign: string;
+  onCampaignChange: (c: string) => void;
+  platforms: string[];
+  platform: string;
+  onPlatformChange: (p: string) => void;
+  adAccounts: string[];
+  adAccount: string;
+  onAdAccountChange: (a: string) => void;
 }
 
 const dateInput: React.CSSProperties = {

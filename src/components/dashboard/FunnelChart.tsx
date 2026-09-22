@@ -4,7 +4,8 @@ import type { FunnelStage } from "@/lib/types";
 
 const WIDTH = 800;
 const HEIGHT = 108;
-const LABEL_AREA = 40;
+const TOP_LABEL_AREA = 26;
+const BOTTOM_COUNT_AREA = 26;
 const MIN_PCT = 4; // piso visual: uma etapa em 0% ainda aparece como um fio fino
 
 export default function FunnelChart({ stages }: { stages: FunnelStage[] }) {
@@ -12,7 +13,7 @@ export default function FunnelChart({ stages }: { stages: FunnelStage[] }) {
   if (n === 0) return null;
 
   const segW = WIDTH / n;
-  const centerY = HEIGHT / 2;
+  const centerY = TOP_LABEL_AREA + HEIGHT / 2;
   const heightAt = (i: number) => (Math.max(stages[i].pct, MIN_PCT) / 100) * (HEIGHT - 16);
 
   let topPath = `M 0 ${(centerY - heightAt(0) / 2).toFixed(2)}`;
@@ -44,15 +45,15 @@ export default function FunnelChart({ stages }: { stages: FunnelStage[] }) {
 
   return (
     <svg
-      viewBox={`0 0 ${WIDTH} ${HEIGHT + LABEL_AREA}`}
+      viewBox={`0 0 ${WIDTH} ${TOP_LABEL_AREA + HEIGHT + BOTTOM_COUNT_AREA}`}
       width="100%"
       style={{ display: "block", overflow: "visible" }}
     >
       <defs>
         <linearGradient id="funnelFill" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#7c6ff2" />
-          <stop offset="55%" stopColor="#3f9be8" />
-          <stop offset="100%" stopColor="#1fd9ae" />
+          <stop offset="0%" stopColor="#2f6bff" />
+          <stop offset="50%" stopColor="#8b3ce0" />
+          <stop offset="100%" stopColor="#e0227f" />
         </linearGradient>
       </defs>
 
@@ -62,9 +63,9 @@ export default function FunnelChart({ stages }: { stages: FunnelStage[] }) {
         <line
           key={i}
           x1={(i + 1) * segW}
-          y1={4}
+          y1={TOP_LABEL_AREA + 4}
           x2={(i + 1) * segW}
-          y2={HEIGHT - 4}
+          y2={TOP_LABEL_AREA + HEIGHT - 4}
           stroke="rgba(11,15,23,0.35)"
           strokeWidth={1}
         />
@@ -88,19 +89,19 @@ export default function FunnelChart({ stages }: { stages: FunnelStage[] }) {
         <g key={s.key + "-label"}>
           <text
             x={i * segW + segW / 2}
-            y={HEIGHT + 17}
+            y={16}
             textAnchor="middle"
             fontSize={12}
             fill="var(--text)"
-            fontWeight={500}
+            fontWeight={700}
           >
             {s.label}
           </text>
           <text
             x={i * segW + segW / 2}
-            y={HEIGHT + 33}
+            y={TOP_LABEL_AREA + HEIGHT + 18}
             textAnchor="middle"
-            fontSize={11}
+            fontSize={12}
             fill="var(--text-muted)"
           >
             {s.count.toLocaleString("pt-BR")}

@@ -49,3 +49,20 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ product }, { status: 201 });
 }
+
+export async function DELETE(req: NextRequest) {
+  const { response } = await requireSession();
+  if (response) return response;
+
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+  if (!id) {
+    return NextResponse.json({ error: "id é obrigatório" }, { status: 400 });
+  }
+
+  // onDelete: Cascade no schema já apaga eventos, gasto e conexão de anúncios
+  // desse produto junto.
+  await prisma.product.delete({ where: { id } }).catch(() => null);
+
+  return NextResponse.json({ ok: true });
+}

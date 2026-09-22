@@ -8,17 +8,35 @@ export default function ProductSidebar({
   selectedId,
   onSelect,
   onCreated,
+  onDeleted,
 }: {
   products: Product[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   onCreated: (p: Product) => void;
+  onDeleted: (id: string) => void;
 }) {
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  async function handleDelete(p: Product) {
+    const sure = window.confirm(
+      `Excluir "${p.name}"? Isso apaga também todo o histórico de eventos, gasto e a conexão de anúncios desse produto. Essa ação não pode ser desfeita.`
+    );
+    if (!sure) return;
+
+    setDeletingId(p.id);
+    try {
+      const res = await fetch(`/api/products?id=${p.id}`, { method: "DELETE" });
+      if (res.ok) onDeleted(p.id);
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -138,22 +156,49 @@ export default function ProductSidebar({
 
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         {products.map((p) => (
-          <button
+          <div
             key={p.id}
-            onClick={() => onSelect(p.id)}
             style={{
-              textAlign: "left",
-              padding: "9px 10px",
+              display: "flex",
+              alignItems: "center",
               borderRadius: 8,
               border: "1px solid transparent",
               background: p.id === selectedId ? "var(--bg-elevated)" : "transparent",
               borderColor: p.id === selectedId ? "var(--border)" : "transparent",
-              color: p.id === selectedId ? "var(--text)" : "var(--text-muted)",
             }}
           >
-            <div style={{ fontSize: 14, fontWeight: 500 }}>{p.name}</div>
-            <div style={{ fontSize: 11, opacity: 0.7 }}>{p.slug}</div>
-          </button>
+            <button
+              onClick={() => onSelect(p.id)}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                textAlign: "left",
+                padding: "9px 10px",
+                background: "transparent",
+                border: "none",
+                color: p.id === selectedId ? "var(--text)" : "var(--text-muted)",
+              }}
+            >
+              <div style={{ fontSize: 14, fontWeight: 500 }}>{p.name}</div>
+              <div style={{ fontSize: 11, opacity: 0.7 }}>{p.slug}</div>
+            </button>
+            <button
+              onClick={() => handleDelete(p)}
+              disabled={deletingId === p.id}
+              title="Excluir produto"
+              style={{
+                flexShrink: 0,
+                background: "transparent",
+                border: "none",
+                color: "var(--text-muted)",
+                padding: "0 10px",
+                fontSize: 15,
+                cursor: "pointer",
+              }}
+            >
+              {deletingId === p.id ? "…" : "🗑"}
+            </button>
+          </div>
         ))}
       </div>
     </div>

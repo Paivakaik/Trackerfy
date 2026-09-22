@@ -52,10 +52,13 @@ export async function GET(req: NextRequest) {
   const clicks = new Set(clickRows.map((r) => r.sessionId)).size;
   const pageViews = new Set(pageViewRows.map((r) => r.sessionId)).size;
   const initiateCheckouts = new Set(icRows.map((r) => r.sessionId)).size;
-  // Sessões distintas com pelo menos 1 compra (qualquer status), para manter
-  // o funil sempre não-crescente (mesma unidade de contagem em todas as
-  // etapas) e representar quem concluiu a ação de compra.
+  // Sessões distintas com pelo menos 1 compra (qualquer status) — venda
+  // "iniciada", já entrou no fluxo de pagamento (inclui pix/boleto ainda
+  // pendente). Venda "aprovada" exclui só quem ficou parado em pendente.
   const purchases = new Set(purchaseEvents.map((r) => r.sessionId)).size;
+  const approvedSales = new Set(
+    purchaseEvents.filter((e) => e.saleStatus !== "pending").map((r) => r.sessionId)
+  ).size;
   // A receita exibida no funil só considera vendas pagas — pendentes e
   // reembolsadas aparecem separadamente no card de Resumo.
   const revenue = purchaseEvents
@@ -67,18 +70,14 @@ export async function GET(req: NextRequest) {
 
   const stages = [
     { key: "click", label: "Cliques", count: clicks, pct: 100 },
-    { key: "page_view", label: "Page View", count: pageViews, pct: pct(pageViews) },
-    {
-      key: "initiate_checkout",
-      label: "Initiate Checkout",
-      count: initiateCheckouts,
-      pct: pct(initiateCheckouts),
-    },
-    { key: "purchase", label: "Vendas", count: purchases, pct: pct(purchases) },
+    { key: "page_view", label: "Vis. Página", count: pageViews, pct: pct(pageViews) },
+    { key: "initiate_checkout", label: "ICs", count: initiateCheckouts, pct: pct(initiateCheckouts) },
+    { key: "purchase", label: "Vendas Inic.", count: purchases, pct: pct(purchases) },
+    { key: "approved", label: "Vendas Apr.", count: approvedSales, pct: pct(approvedSales) },
   ];
 
   const spend = await getAdSpendTotal(productId, campaign, start, end);
-  const costPerSale = purchases > 0 && spend > 0 ? spend / purchases : null;
+  const costPerSale = approvedSales > 0 && spend > 0 ? spend / approvedSales : null;
 
   return NextResponse.json({
     stages,

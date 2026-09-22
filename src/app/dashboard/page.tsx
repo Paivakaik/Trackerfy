@@ -12,7 +12,14 @@ import InstallSnippet from "@/components/dashboard/InstallSnippet";
 import type { Product, PeriodKey, FunnelResponse, SummaryResponse } from "@/lib/types";
 
 function todayISO() {
-  return new Date().toISOString().slice(0, 10);
+  // Data de hoje no fuso de São Paulo (não UTC), pra bater com o período que
+  // o servidor calcula pro filtro "Personalizado".
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
 }
 
 export default function DashboardPage() {
@@ -130,7 +137,7 @@ function DashboardInner() {
   const selectedProduct = products.find((p) => p.id === selectedId) || null;
 
   return (
-    <div style={{ display: "flex", gap: 20, maxWidth: 1200, margin: "0 auto" }}>
+    <div style={{ display: "flex", gap: 20, maxWidth: 1600, margin: "0 auto" }}>
       <ProductSidebar
         products={products}
         selectedId={selectedId}
@@ -138,6 +145,13 @@ function DashboardInner() {
         onCreated={(p) => {
           setProducts((prev) => [p, ...prev]);
           setSelectedId(p.id);
+        }}
+        onDeleted={(id) => {
+          setProducts((prev) => {
+            const next = prev.filter((p) => p.id !== id);
+            if (selectedId === id) setSelectedId(next[0]?.id ?? null);
+            return next;
+          });
         }}
       />
 
@@ -215,7 +229,42 @@ function DashboardInner() {
               <div style={{ color: "var(--text-muted)", marginBottom: 20 }}>Carregando...</div>
             )}
 
-            <SectionLabel>Funil de Conversão</SectionLabel>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                marginBottom: 8,
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: "var(--text-muted)",
+                  letterSpacing: 0.4,
+                }}
+              >
+                FUNIL DE CONVERSÃO
+              </span>
+              <span
+                title="Cliques/Vis. Página/ICs vêm do script instalado no seu site. Vendas Inic./Apr. vêm das vendas registradas (manual, Lastlink etc)."
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 14,
+                  height: 14,
+                  borderRadius: "50%",
+                  border: "1px solid var(--text-muted)",
+                  color: "var(--text-muted)",
+                  fontSize: 10,
+                  cursor: "default",
+                }}
+              >
+                i
+              </span>
+            </div>
             <div
               style={{
                 background: "var(--bg-card)",
