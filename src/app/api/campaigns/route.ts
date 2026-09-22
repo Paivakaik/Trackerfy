@@ -5,13 +5,30 @@ import { resolvePeriod, PeriodKey } from "@/lib/dateRanges";
 
 // O nome da campanha no gasto (Meta) é o nome puro ("CALISTENIA 4 — Cópia").
 // Já o utm_campaign do clique costuma vir como "nome|id_da_campanha" (o
-// padrão de UTM dinâmica da Meta), e às vezes com "+" no lugar de espaço
-// dependendo de como a URL do anúncio foi montada. Normalizamos os dois
-// lados pro mesmo formato pra conseguir juntar gasto com clique/venda por
-// campanha.
+// padrão de UTM dinâmica da Meta). Algumas URLs de anúncio mais antigas
+// foram montadas com o nome já url-encoded dentro do parâmetro (e às vezes
+// codificado duas vezes), então "—" e acentos chegam como "%E2%80%94" /
+// "%C3%B3" literais em vez de decodificados. Decodifica em até 2 passadas
+// (cobre single e double-encoding) antes de comparar.
+function decodeMaybeTwice(value: string): string {
+  let out = value;
+  for (let i = 0; i < 2 && /%[0-9A-Fa-f]{2}/.test(out); i++) {
+    try {
+      out = decodeURIComponent(out);
+    } catch {
+      break;
+    }
+  }
+  return out;
+}
+
+function displayCampaignName(raw: string): string {
+  const beforePipe = raw.split("|")[0].replace(/\+/g, " ");
+  return decodeMaybeTwice(beforePipe).trim();
+}
+
 function normalizeCampaignName(raw: string): string {
-  const beforePipe = raw.split("|")[0];
-  return beforePipe.replace(/\+/g, " ").trim().toLowerCase();
+  return displayCampaignName(raw).toLowerCase();
 }
 
 export async function GET(req: NextRequest) {
@@ -117,7 +134,7 @@ export async function GET(req: NextRequest) {
 
   for (const e of events) {
     const key = normalizeCampaignName(e.utmCampaign!);
-    const row = getRow(key, e.utmCampaign!.split("|")[0].replace(/\+/g, " ").trim());
+    const row = getRow(key, displayCampaignName(e.utmCampaign!));
 
     if (e.type === "CLICK") row.clicks.add(e.sessionId);
     else if (e.type === "PAGE_VIEW") row.pageViews.add(e.sessionId);
