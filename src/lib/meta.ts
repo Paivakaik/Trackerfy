@@ -90,10 +90,28 @@ export type DailyCampaignSpend = {
   date: string; // YYYY-MM-DD
   campaign: string;
   amount: number;
+  impressions: number;
+  linkClicks: number;
+  video3s: number;
+  videoThru: number;
 };
 
-// Busca gasto por campanha, por dia, num intervalo. adAccountId já deve vir
-// no formato "act_123..." (é o que a Graph API retorna em /me/adaccounts).
+// Alguns campos de vídeo/ação da Insights API voltam como número simples e
+// outros como array de { action_type, value } (um por tipo de ação) — soma
+// os valores desse array, ou usa direto se já vier como número.
+function sumActionField(raw: any): number {
+  if (raw == null) return 0;
+  if (typeof raw === "number" || typeof raw === "string") return Number(raw) || 0;
+  if (Array.isArray(raw)) {
+    return raw.reduce((sum, entry) => sum + (Number(entry?.value) || 0), 0);
+  }
+  return 0;
+}
+
+// Busca gasto + impressões/cliques/vídeo por campanha, por dia, num
+// intervalo. adAccountId já deve vir no formato "act_123..." (é o que a
+// Graph API retorna em /me/adaccounts). video_3_sec_watched_actions e
+// video_p100_watched_actions alimentam Hook rate / Hold rate.
 export async function fetchDailyCampaignSpend(
   accessToken: string,
   adAccountId: string,
@@ -103,7 +121,8 @@ export async function fetchDailyCampaignSpend(
   const data = await graphFetch(`/${adAccountId}/insights`, {
     access_token: accessToken,
     level: "campaign",
-    fields: "campaign_name,spend",
+    fields:
+      "campaign_name,spend,impressions,inline_link_clicks,video_3_sec_watched_actions,video_p100_watched_actions",
     time_increment: "1",
     time_range: JSON.stringify({ since: sinceISODate, until: untilISODate }),
     limit: "500",
@@ -113,5 +132,29 @@ export async function fetchDailyCampaignSpend(
     date: row.date_start,
     campaign: row.campaign_name,
     amount: Number(row.spend) || 0,
+    impressions: Number(row.impressions) || 0,
+    linkClicks: Number(row.inline_link_clicks) || 0,
+    video3s: sumActionField(row.video_3_sec_watched_actions),
+    videoThru: sumActionField(row.video_p100_watched_actions),
+  }));
+}
+
+export type CampaignStatusInfo = { campaign: string; status: string };
+
+// Status atual (ACTIVE/PAUSED/...) de cada campanha da conta — pro filtro
+// "só ativas" na aba de Campanhas. É estado agora, não histórico.
+export async function fetchCampaignStatuses(
+  accessToken: string,
+  adAccountId: string
+): Promise<CampaignStatusInfo[]> {
+  const data = await graphFetch(`/${adAccountId}/campaigns`, {
+    access_token: accessToken,
+    fields: "name,status",
+    limit: "500",
+  });
+
+  return (data.data || []).map((row: any) => ({
+    campaign: row.name,
+    status: row.status,
   }));
 }

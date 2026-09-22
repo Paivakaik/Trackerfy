@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
   const to = searchParams.get("to");
   const { start, end } = resolvePeriod(period, from, to);
 
-  const [spendRows, events] = await Promise.all([
+  const [spendRows, events, statusRows] = await Promise.all([
     prisma.adSpend.findMany({
       where: {
         productId,
@@ -37,7 +37,15 @@ export async function GET(req: NextRequest) {
         periodStart: { gte: start },
         periodEnd: { lte: end },
       },
-      select: { campaign: true, amount: true, source: true },
+      select: {
+        campaign: true,
+        amount: true,
+        source: true,
+        impressions: true,
+        linkClicks: true,
+        video3s: true,
+        videoThru: true,
+      },
     }),
     prisma.event.findMany({
       where: { productId, createdAt: { gte: start, lte: end }, utmCampaign: { not: null } },
@@ -50,11 +58,16 @@ export async function GET(req: NextRequest) {
         netValue: true,
       },
     }),
+    prisma.campaignStatus.findMany({ where: { productId }, select: { campaign: true, status: true } }),
   ]);
 
   type Row = {
     displayName: string;
     spend: number;
+    impressions: number;
+    linkClicks: number;
+    video3s: number;
+    videoThru: number;
     clicks: Set<string>;
     pageViews: Set<string>;
     ics: Set<string>;
@@ -71,6 +84,10 @@ export async function GET(req: NextRequest) {
       row = {
         displayName,
         spend: 0,
+        impressions: 0,
+        linkClicks: 0,
+        video3s: 0,
+        videoThru: 0,
         clicks: new Set(),
         pageViews: new Set(),
         ics: new Set(),
@@ -83,10 +100,19 @@ export async function GET(req: NextRequest) {
     return row;
   }
 
+  const statusByKey = new Map<string, string>();
+  for (const s of statusRows) {
+    statusByKey.set(normalizeCampaignName(s.campaign), s.status);
+  }
+
   for (const s of spendRows) {
     const key = normalizeCampaignName(s.campaign);
     const row = getRow(key, s.campaign);
     row.spend += s.amount;
+    row.impressions += s.impressions ?? 0;
+    row.linkClicks += s.linkClicks ?? 0;
+    row.video3s += s.video3s ?? 0;
+    row.videoThru += s.videoThru ?? 0;
   }
 
   for (const e of events) {
@@ -105,12 +131,13 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const campaigns = Array.from(rows.values())
-    .map((r) => {
+  const campaigns = Array.from(rows.entries())
+    .map(([key, r]) => {
       const clicks = r.clicks.size;
       const approved = r.salesApproved.size;
       return {
         name: r.displayName,
+        status: statusByKey.get(key) ?? null,
         spend: r.spend,
         clicks,
         pageViews: r.pageViews.size,
@@ -121,6 +148,14 @@ export async function GET(req: NextRequest) {
         roas: r.spend > 0 ? r.revenue / r.spend : null,
         cpa: approved > 0 ? r.spend / approved : null,
         convRate: clicks > 0 ? (approved / clicks) * 100 : 0,
+        // Métricas do próprio anúncio (Meta): impressões/cliques do link, não
+        // o clique rastreado pelo nosso script.
+        cpc: r.linkClicks > 0 ? r.spend / r.linkClicks : null,
+        cpm: r.impressions > 0 ? (r.spend / r.impressions) * 1000 : null,
+        ctr: r.impressions > 0 ? (r.linkClicks / r.impressions) * 100 : null,
+        hookRate: r.impressions > 0 ? (r.video3s / r.impressions) * 100 : null,
+        holdRate: r.video3s > 0 ? (r.videoThru / r.video3s) * 100 : null,
+        roi: r.spend > 0 ? ((r.revenue - r.spend) / r.spend) * 100 : null,
       };
     })
     .sort((a, b) => b.spend - a.spend);

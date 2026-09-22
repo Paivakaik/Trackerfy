@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { fetchDailyCampaignSpend } from "@/lib/meta";
+import { fetchDailyCampaignSpend, fetchCampaignStatuses } from "@/lib/meta";
 import type { AdConnection } from "@prisma/client";
 import { subDays, format } from "date-fns";
 import { dayBoundsBRT } from "@/lib/dateRanges";
@@ -19,22 +19,42 @@ export async function syncMetaAdConnection(connection: AdConnection, daysBack = 
   const sinceStr = format(since, "yyyy-MM-dd");
   const untilStr = format(until, "yyyy-MM-dd");
 
-  const rows = await fetchDailyCampaignSpend(
-    connection.accessToken,
-    connection.adAccountId,
-    sinceStr,
-    untilStr
-  );
+  const [rows, statuses] = await Promise.all([
+    fetchDailyCampaignSpend(connection.accessToken, connection.adAccountId, sinceStr, untilStr),
+    fetchCampaignStatuses(connection.accessToken, connection.adAccountId).catch(() => []),
+  ]);
 
-  const totalsByDay = new Map<string, number>();
+  const totalsByDay = new Map<
+    string,
+    { amount: number; impressions: number; linkClicks: number; video3s: number; videoThru: number }
+  >();
   for (const row of rows) {
-    totalsByDay.set(row.date, (totalsByDay.get(row.date) ?? 0) + row.amount);
+    const acc = totalsByDay.get(row.date) ?? {
+      amount: 0,
+      impressions: 0,
+      linkClicks: 0,
+      video3s: 0,
+      videoThru: 0,
+    };
+    acc.amount += row.amount;
+    acc.impressions += row.impressions;
+    acc.linkClicks += row.linkClicks;
+    acc.video3s += row.video3s;
+    acc.videoThru += row.videoThru;
+    totalsByDay.set(row.date, acc);
   }
 
   const writes = [];
 
   for (const row of rows) {
     const { start: periodStart, end: periodEnd } = dayBoundsBRT(row.date);
+    const fields = {
+      amount: row.amount,
+      impressions: row.impressions,
+      linkClicks: row.linkClicks,
+      video3s: row.video3s,
+      videoThru: row.videoThru,
+    };
     writes.push(
       prisma.adSpend.upsert({
         where: {
@@ -46,14 +66,14 @@ export async function syncMetaAdConnection(connection: AdConnection, daysBack = 
             source: "meta",
           },
         },
-        update: { amount: row.amount },
+        update: fields,
         create: {
           productId: connection.productId,
           campaign: row.campaign,
           periodStart,
           periodEnd,
-          amount: row.amount,
           source: "meta",
+          ...fields,
         },
       })
     );
@@ -72,15 +92,25 @@ export async function syncMetaAdConnection(connection: AdConnection, daysBack = 
             source: "meta",
           },
         },
-        update: { amount: total },
+        update: total,
         create: {
           productId: connection.productId,
           campaign: "__all__",
           periodStart,
           periodEnd,
-          amount: total,
           source: "meta",
+          ...total,
         },
+      })
+    );
+  }
+
+  for (const s of statuses) {
+    writes.push(
+      prisma.campaignStatus.upsert({
+        where: { productId_campaign: { productId: connection.productId, campaign: s.campaign } },
+        update: { status: s.status },
+        create: { productId: connection.productId, campaign: s.campaign, status: s.status },
       })
     );
   }

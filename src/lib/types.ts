@@ -30,6 +30,7 @@ export type PaymentBreakdown = {
 
 export type CampaignRow = {
   name: string;
+  status: string | null;
   spend: number;
   clicks: number;
   pageViews: number;
@@ -40,6 +41,12 @@ export type CampaignRow = {
   roas: number | null;
   cpa: number | null;
   convRate: number;
+  cpc: number | null;
+  cpm: number | null;
+  ctr: number | null;
+  hookRate: number | null;
+  holdRate: number | null;
+  roi: number | null;
 };
 
 export type SummaryResponse = {
