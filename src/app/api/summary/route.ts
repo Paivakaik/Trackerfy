@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
   const [purchases, spend] = await Promise.all([
     prisma.event.findMany({
       where,
-      select: { value: true, taxAmount: true, saleStatus: true, paymentMethod: true },
+      select: { value: true, netValue: true, taxAmount: true, saleStatus: true, paymentMethod: true },
     }),
     getAdSpendTotal(productId, campaign, start, end),
   ]);
@@ -44,9 +44,12 @@ export async function GET(req: NextRequest) {
   const refunded = purchases.filter((p) => p.saleStatus === "refunded");
   const chargeback = purchases.filter((p) => p.saleStatus === "chargeback");
 
+  // Bruto: preço cheio que o cliente pagou. Real: o que você efetivamente
+  // recebe (netValue já vem líquido da taxa da plataforma no Lastlink; sem
+  // essa info, cai pro valor cheio mesmo).
   const grossRevenue = sum(paid.map((p) => p.value));
   const tax = sum(paid.map((p) => p.taxAmount));
-  const netRevenue = grossRevenue - tax;
+  const netRevenue = sum(paid.map((p) => p.netValue ?? p.value)) - tax;
   const pendingRevenue = sum(pending.map((p) => p.value));
   const refundedRevenue = sum(refunded.map((p) => p.value));
 

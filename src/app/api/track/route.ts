@@ -84,6 +84,9 @@ export async function POST(req: NextRequest) {
         type: EVENT_MAP[event],
         sessionId: sessionId.slice(0, 100),
         value,
+        // Sem gateway/marketplace no meio (venda lançada direto pelo script),
+        // o valor recebido é o valor cheio.
+        netValue: value,
         taxAmount,
         saleStatus,
         paymentMethod,

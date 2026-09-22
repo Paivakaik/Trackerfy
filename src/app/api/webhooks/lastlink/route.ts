@@ -31,6 +31,18 @@ function extractValue(purchase: any): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+// "Commissions" é um array com uma entrada por participante da venda
+// (PRODUCER, MARKETPLACE, AFFILIATE, COPRODUCER...). A entrada PRODUCER já
+// vem líquida da taxa da plataforma — é o valor que efetivamente cai pro
+// dono do produto, diferente do preço cheio que o cliente pagou.
+function extractNetValue(commissions: any): number | null {
+  if (!Array.isArray(commissions)) return null;
+  const producerEntries = commissions.filter((c) => c?.Source === "PRODUCER");
+  if (producerEntries.length === 0) return null;
+  const total = producerEntries.reduce((sum, c) => sum + (Number(c?.Value) || 0), 0);
+  return Number.isFinite(total) ? total : null;
+}
+
 export async function POST(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const token = searchParams.get("token");
@@ -83,6 +95,7 @@ export async function POST(req: NextRequest) {
 
   const sessionKey = `lastlink:${paymentId}`;
   const value = extractValue(purchase);
+  const netValue = extractNetValue(body?.Data?.Commissions);
   const paymentMethod = mapPaymentMethod(purchase?.Payment?.PaymentMethod);
   const utm = body?.Data?.Utm;
 
@@ -103,6 +116,7 @@ export async function POST(req: NextRequest) {
       data: {
         saleStatus,
         value: value ?? existing.value,
+        netValue: netValue ?? existing.netValue,
         paymentMethod: existing.paymentMethod || paymentMethod,
       },
     });
@@ -113,6 +127,7 @@ export async function POST(req: NextRequest) {
         type: "PURCHASE",
         sessionId: sessionKey,
         value,
+        netValue,
         saleStatus,
         paymentMethod,
         utmSource: utm?.UtmSource || null,

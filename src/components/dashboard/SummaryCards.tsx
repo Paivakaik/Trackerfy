@@ -14,49 +14,62 @@ function formatPct(v: number | null) {
 
 export default function SummaryCards({ summary }: { summary: SummaryResponse }) {
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "1.1fr 1fr 1fr 1fr",
-        gridTemplateRows: "auto auto auto",
-        gap: 10,
-      }}
-    >
-      <Card label="Faturamento Líquido" value={formatBRL(summary.netRevenue)} />
-      <Card label="Gastos com anúncios" value={formatBRL(summary.spend)} />
-      <Card
-        label="ROAS"
-        value={summary.roas !== null ? `${summary.roas.toFixed(2)}x` : "—"}
-        tone={summary.roas !== null ? (summary.roas >= 1 ? "good" : "bad") : undefined}
-      />
-      <Card
-        label="Lucro"
-        value={formatBRL(summary.profit)}
-        tone={summary.profit >= 0 ? "good" : "bad"}
-      />
-
-      <div style={{ gridRow: "2 / span 2" }}>
-        <PaymentDonut breakdown={summary.paymentBreakdown} total={summary.paidCount} />
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr",
+          gap: 10,
+        }}
+      >
+        <Card label="Faturamento Bruto" value={formatBRL(summary.grossRevenue)} />
+        <Card label="Valor Real (sua comissão)" value={formatBRL(summary.netRevenue)} />
+        <Card label="Gastos com anúncios" value={formatBRL(summary.spend)} />
+        <Card
+          label="ROAS"
+          value={summary.roas !== null ? `${summary.roas.toFixed(2)}x` : "—"}
+          tone={summary.roas !== null ? (summary.roas >= 1 ? "good" : "bad") : undefined}
+        />
+        <Card
+          label="Lucro"
+          value={formatBRL(summary.profit)}
+          tone={summary.profit >= 0 ? "good" : "bad"}
+        />
       </div>
 
-      <Card label="Vendas Pendentes" value={formatBRL(summary.pendingRevenue)} />
-      <Card
-        label="ROI"
-        value={formatPct(summary.roi)}
-        tone={summary.roi !== null ? (summary.roi >= 0 ? "good" : "bad") : undefined}
-      />
-      <Card
-        label="Margem de Lucro"
-        value={formatPct(summary.profitMargin)}
-        tone={summary.profitMargin !== null ? (summary.profitMargin >= 0 ? "good" : "bad") : undefined}
-      />
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1.1fr 1fr 1fr 1fr",
+          gridTemplateRows: "auto auto",
+          gap: 10,
+        }}
+      >
+        <div style={{ gridRow: "1 / span 2" }}>
+          <PaymentDonut breakdown={summary.paymentBreakdown} total={summary.paidCount} />
+        </div>
 
-      <Card label="Vendas Reembolsadas" value={formatBRL(summary.refundedRevenue)} />
-      <Card label="Reembolso" value={formatPct(summary.refundRate)} />
-      <Card label="ARPU" value={formatBRL(summary.arpu)} />
+        <Card label="Vendas Pendentes" value={formatBRL(summary.pendingRevenue)} />
+        <Card
+          label="ROI"
+          value={formatPct(summary.roi)}
+          tone={summary.roi !== null ? (summary.roi >= 0 ? "good" : "bad") : undefined}
+        />
+        <Card
+          label="Margem de Lucro"
+          value={formatPct(summary.profitMargin)}
+          tone={summary.profitMargin !== null ? (summary.profitMargin >= 0 ? "good" : "bad") : undefined}
+        />
 
-      <Card label="Imposto" value={formatBRL(summary.tax)} />
-      <Card label="Chargeback" value={formatPct(summary.chargebackRate)} />
+        <Card label="Vendas Reembolsadas" value={formatBRL(summary.refundedRevenue)} />
+        <Card label="Reembolso" value={formatPct(summary.refundRate)} />
+        <Card label="ARPU" value={formatBRL(summary.arpu)} />
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <Card label="Imposto" value={formatBRL(summary.tax)} />
+        <Card label="Chargeback" value={formatPct(summary.chargebackRate)} />
+      </div>
     </div>
   );
 }

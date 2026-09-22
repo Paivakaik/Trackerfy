@@ -23,6 +23,10 @@ model Product {
 // saleStatus / paymentMethod só se aplicam a eventos do tipo PURCHASE:
 // saleStatus: PAID | PENDING | REFUNDED | CHARGEBACK (padrão PAID)
 // paymentMethod: PIX | CARD | BOLETO | OTHER (padrão OTHER)
+// value: preço cheio pago pelo cliente (faturamento bruto).
+// netValue: quanto o produtor realmente recebe depois da taxa da plataforma
+// (ex: comissão "PRODUCER" do webhook do Lastlink) — null quando a origem
+// não informa esse detalhe, e nesse caso o código trata como igual a value.
 model Event {
   id            String    @id @default(cuid())
   productId     String
@@ -30,6 +34,7 @@ model Event {
   type          String
   sessionId     String
   value         Float?
+  netValue      Float?
   taxAmount     Float?
   saleStatus    String?
   paymentMethod String?
