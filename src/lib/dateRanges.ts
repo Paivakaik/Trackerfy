@@ -17,14 +17,23 @@ function saoPauloDateParts(date: Date): { y: number; m: number; d: number } {
   return { y, m, d };
 }
 
-function startOfDayBRT(y: number, m: number, d: number): Date {
+export function startOfDayBRT(y: number, m: number, d: number): Date {
   // 00:00:00 em São Paulo (UTC-3) = 03:00:00 UTC do mesmo dia.
   return new Date(Date.UTC(y, m - 1, d, 3, 0, 0, 0));
 }
 
-function endOfDayBRT(y: number, m: number, d: number): Date {
+export function endOfDayBRT(y: number, m: number, d: number): Date {
   // 23:59:59.999 em São Paulo = 02:59:59.999 UTC do dia seguinte.
   return new Date(Date.UTC(y, m - 1, d + 1, 2, 59, 59, 999));
+}
+
+// Recebe uma data "YYYY-MM-DD" (como a Meta retorna, já no fuso da conta de
+// anúncios) e devolve os limites do dia em BRT — mesma referência de fuso
+// usada por resolvePeriod, pra uma linha de gasto de um dia "bater" com o
+// filtro "Hoje"/"Ontem" daquele mesmo dia.
+export function dayBoundsBRT(dateStr: string): { start: Date; end: Date } {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return { start: startOfDayBRT(y, m, d), end: endOfDayBRT(y, m, d) };
 }
 
 function shiftDays(y: number, m: number, d: number, delta: number) {

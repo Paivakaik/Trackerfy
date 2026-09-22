@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { fetchDailyCampaignSpend } from "@/lib/meta";
 import type { AdConnection } from "@prisma/client";
-import { subDays, format, startOfDay, endOfDay } from "date-fns";
+import { subDays, format } from "date-fns";
+import { dayBoundsBRT } from "@/lib/dateRanges";
 
 // Sincroniza os últimos `daysBack` dias (padrão 3, para cobrir atraso de
 // atribuição/fuso horário) de gasto por campanha da Meta Ads para dentro do
@@ -33,9 +34,7 @@ export async function syncMetaAdConnection(connection: AdConnection, daysBack = 
   const writes = [];
 
   for (const row of rows) {
-    const day = new Date(`${row.date}T00:00:00.000Z`);
-    const periodStart = startOfDay(day);
-    const periodEnd = endOfDay(day);
+    const { start: periodStart, end: periodEnd } = dayBoundsBRT(row.date);
     writes.push(
       prisma.adSpend.upsert({
         where: {
@@ -61,9 +60,7 @@ export async function syncMetaAdConnection(connection: AdConnection, daysBack = 
   }
 
   for (const [dateStr, total] of totalsByDay) {
-    const day = new Date(`${dateStr}T00:00:00.000Z`);
-    const periodStart = startOfDay(day);
-    const periodEnd = endOfDay(day);
+    const { start: periodStart, end: periodEnd } = dayBoundsBRT(dateStr);
     writes.push(
       prisma.adSpend.upsert({
         where: {
