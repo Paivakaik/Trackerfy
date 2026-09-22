@@ -92,8 +92,8 @@ export type DailyCampaignSpend = {
   amount: number;
   impressions: number;
   linkClicks: number;
-  video3s: number;
-  videoThru: number;
+  videoHook: number;
+  videoHold: number;
 };
 
 // Alguns campos de vídeo/ação da Insights API voltam como número simples e
@@ -110,8 +110,10 @@ function sumActionField(raw: any): number {
 
 // Busca gasto + impressões/cliques/vídeo por campanha, por dia, num
 // intervalo. adAccountId já deve vir no formato "act_123..." (é o que a
-// Graph API retorna em /me/adaccounts). video_3_sec_watched_actions e
-// video_p100_watched_actions alimentam Hook rate / Hold rate.
+// Graph API retorna em /me/adaccounts). video_p25_watched_actions (chegou
+// no primeiro quarto do vídeo) e video_p100_watched_actions (assistiu até o
+// fim) alimentam Hook rate / Hold rate — o campo antigo de "3 segundos" foi
+// descontinuado pela Meta.
 export async function fetchDailyCampaignSpend(
   accessToken: string,
   adAccountId: string,
@@ -122,7 +124,7 @@ export async function fetchDailyCampaignSpend(
     access_token: accessToken,
     level: "campaign",
     fields:
-      "campaign_name,spend,impressions,inline_link_clicks,video_3_sec_watched_actions,video_p100_watched_actions",
+      "campaign_name,spend,impressions,inline_link_clicks,video_p25_watched_actions,video_p100_watched_actions",
     time_increment: "1",
     time_range: JSON.stringify({ since: sinceISODate, until: untilISODate }),
     limit: "500",
@@ -134,8 +136,8 @@ export async function fetchDailyCampaignSpend(
     amount: Number(row.spend) || 0,
     impressions: Number(row.impressions) || 0,
     linkClicks: Number(row.inline_link_clicks) || 0,
-    video3s: sumActionField(row.video_3_sec_watched_actions),
-    videoThru: sumActionField(row.video_p100_watched_actions),
+    videoHook: sumActionField(row.video_p25_watched_actions),
+    videoHold: sumActionField(row.video_p100_watched_actions),
   }));
 }
 

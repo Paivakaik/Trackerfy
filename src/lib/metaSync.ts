@@ -26,21 +26,21 @@ export async function syncMetaAdConnection(connection: AdConnection, daysBack = 
 
   const totalsByDay = new Map<
     string,
-    { amount: number; impressions: number; linkClicks: number; video3s: number; videoThru: number }
+    { amount: number; impressions: number; linkClicks: number; videoHook: number; videoHold: number }
   >();
   for (const row of rows) {
     const acc = totalsByDay.get(row.date) ?? {
       amount: 0,
       impressions: 0,
       linkClicks: 0,
-      video3s: 0,
-      videoThru: 0,
+      videoHook: 0,
+      videoHold: 0,
     };
     acc.amount += row.amount;
     acc.impressions += row.impressions;
     acc.linkClicks += row.linkClicks;
-    acc.video3s += row.video3s;
-    acc.videoThru += row.videoThru;
+    acc.videoHook += row.videoHook;
+    acc.videoHold += row.videoHold;
     totalsByDay.set(row.date, acc);
   }
 
@@ -52,8 +52,8 @@ export async function syncMetaAdConnection(connection: AdConnection, daysBack = 
       amount: row.amount,
       impressions: row.impressions,
       linkClicks: row.linkClicks,
-      video3s: row.video3s,
-      videoThru: row.videoThru,
+      videoHook: row.videoHook,
+      videoHold: row.videoHold,
     };
     writes.push(
       prisma.adSpend.upsert({

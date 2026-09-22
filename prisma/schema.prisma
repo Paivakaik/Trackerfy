@@ -60,9 +60,10 @@ model Event {
 // (periodStart = periodEnd = o dia). O gasto exibido no dashboard é a SOMA de
 // todas as linhas cujo período cai dentro do período selecionado, então as
 // duas origens se somam naturalmente sem conflito.
-// impressions/linkClicks/video3s/videoThru só vêm preenchidos pra linhas
+// impressions/linkClicks/videoHook/videoHold só vêm preenchidos pra linhas
 // source="meta" (a Marketing API retorna isso junto do spend) — usados pra
-// CPC/CPM/CTR/Hook rate/Hold rate na aba de Campanhas.
+// CPC/CPM/CTR/Hook rate/Hold rate na aba de Campanhas. videoHook = video_p25
+// (chegou no primeiro quarto), videoHold = video_p100 (assistiu até o fim).
 model AdSpend {
   id          String   @id @default(cuid())
   productId   String
@@ -73,8 +74,8 @@ model AdSpend {
   amount      Float
   impressions Int?
   linkClicks  Int?
-  video3s     Int?
-  videoThru   Int?
+  videoHook   Int?
+  videoHold   Int?
   source      String   @default("manual")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

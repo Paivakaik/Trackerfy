@@ -43,8 +43,8 @@ export async function GET(req: NextRequest) {
         source: true,
         impressions: true,
         linkClicks: true,
-        video3s: true,
-        videoThru: true,
+        videoHook: true,
+        videoHold: true,
       },
     }),
     prisma.event.findMany({
@@ -66,8 +66,8 @@ export async function GET(req: NextRequest) {
     spend: number;
     impressions: number;
     linkClicks: number;
-    video3s: number;
-    videoThru: number;
+    videoHook: number;
+    videoHold: number;
     clicks: Set<string>;
     pageViews: Set<string>;
     ics: Set<string>;
@@ -86,8 +86,8 @@ export async function GET(req: NextRequest) {
         spend: 0,
         impressions: 0,
         linkClicks: 0,
-        video3s: 0,
-        videoThru: 0,
+        videoHook: 0,
+        videoHold: 0,
         clicks: new Set(),
         pageViews: new Set(),
         ics: new Set(),
@@ -111,8 +111,8 @@ export async function GET(req: NextRequest) {
     row.spend += s.amount;
     row.impressions += s.impressions ?? 0;
     row.linkClicks += s.linkClicks ?? 0;
-    row.video3s += s.video3s ?? 0;
-    row.videoThru += s.videoThru ?? 0;
+    row.videoHook += s.videoHook ?? 0;
+    row.videoHold += s.videoHold ?? 0;
   }
 
   for (const e of events) {
@@ -153,8 +153,8 @@ export async function GET(req: NextRequest) {
         cpc: r.linkClicks > 0 ? r.spend / r.linkClicks : null,
         cpm: r.impressions > 0 ? (r.spend / r.impressions) * 1000 : null,
         ctr: r.impressions > 0 ? (r.linkClicks / r.impressions) * 100 : null,
-        hookRate: r.impressions > 0 ? (r.video3s / r.impressions) * 100 : null,
-        holdRate: r.video3s > 0 ? (r.videoThru / r.video3s) * 100 : null,
+        hookRate: r.impressions > 0 ? (r.videoHook / r.impressions) * 100 : null,
+        holdRate: r.videoHook > 0 ? (r.videoHold / r.videoHook) * 100 : null,
         roi: r.spend > 0 ? ((r.revenue - r.spend) / r.spend) * 100 : null,
       };
     })
