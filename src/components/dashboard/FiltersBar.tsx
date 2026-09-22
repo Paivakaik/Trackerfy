@@ -27,6 +27,7 @@ export default function FiltersBar({
   adAccounts,
   adAccount,
   onAdAccountChange,
+  periodOnly,
 }: FiltersBarProps) {
   const fromRef = useRef<HTMLInputElement>(null);
 
@@ -98,44 +99,48 @@ export default function FiltersBar({
         </>
       )}
 
-      <select
-        value={adAccount}
-        onChange={(e) => onAdAccountChange(e.target.value)}
-        style={{ ...dateInput, minWidth: 160 }}
-      >
-        <option value="">Todas as contas</option>
-        {adAccounts.map((a) => (
-          <option key={a} value={a}>
-            {a}
-          </option>
-        ))}
-      </select>
+      {!periodOnly && (
+        <>
+          <select
+            value={adAccount}
+            onChange={(e) => onAdAccountChange(e.target.value)}
+            style={{ ...dateInput, minWidth: 160 }}
+          >
+            <option value="">Todas as contas</option>
+            {adAccounts.map((a) => (
+              <option key={a} value={a}>
+                {a}
+              </option>
+            ))}
+          </select>
 
-      <select
-        value={platform}
-        onChange={(e) => onPlatformChange(e.target.value)}
-        style={{ ...dateInput, minWidth: 150 }}
-      >
-        <option value="">Qualquer plataforma</option>
-        {platforms.map((p) => (
-          <option key={p} value={p}>
-            {p}
-          </option>
-        ))}
-      </select>
+          <select
+            value={platform}
+            onChange={(e) => onPlatformChange(e.target.value)}
+            style={{ ...dateInput, minWidth: 150 }}
+          >
+            <option value="">Qualquer plataforma</option>
+            {platforms.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
 
-      <select
-        value={campaign}
-        onChange={(e) => onCampaignChange(e.target.value)}
-        style={{ ...dateInput, minWidth: 180 }}
-      >
-        <option value="">Todas as campanhas</option>
-        {campaigns.map((c) => (
-          <option key={c} value={c}>
-            {c}
-          </option>
-        ))}
-      </select>
+          <select
+            value={campaign}
+            onChange={(e) => onCampaignChange(e.target.value)}
+            style={{ ...dateInput, minWidth: 180 }}
+          >
+            <option value="">Todas as campanhas</option>
+            {campaigns.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </>
+      )}
     </div>
   );
 }
@@ -156,6 +161,7 @@ interface FiltersBarProps {
   adAccounts: string[];
   adAccount: string;
   onAdAccountChange: (a: string) => void;
+  periodOnly?: boolean;
 }
 
 const dateInput: React.CSSProperties = {

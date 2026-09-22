@@ -28,6 +28,20 @@ export type PaymentBreakdown = {
   pct: number;
 };
 
+export type CampaignRow = {
+  name: string;
+  spend: number;
+  clicks: number;
+  pageViews: number;
+  ics: number;
+  salesInit: number;
+  salesApproved: number;
+  revenue: number;
+  roas: number | null;
+  cpa: number | null;
+  convRate: number;
+};
+
 export type SummaryResponse = {
   netRevenue: number;
   grossRevenue: number;

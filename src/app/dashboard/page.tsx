@@ -10,7 +10,8 @@ import SummaryCards from "@/components/dashboard/SummaryCards";
 import MetaConnect from "@/components/dashboard/MetaConnect";
 import InstallSnippet from "@/components/dashboard/InstallSnippet";
 import TrackerIA from "@/components/dashboard/TrackerIA";
-import type { Product, PeriodKey, FunnelResponse, SummaryResponse } from "@/lib/types";
+import CampaignsTable from "@/components/dashboard/CampaignsTable";
+import type { Product, PeriodKey, FunnelResponse, SummaryResponse, CampaignRow } from "@/lib/types";
 
 function todayISO() {
   // Data de hoje no fuso de São Paulo (não UTC), pra bater com o período que
@@ -49,13 +50,15 @@ function DashboardInner() {
   const [funnel, setFunnel] = useState<FunnelResponse | null>(null);
   const [summary, setSummary] = useState<SummaryResponse | null>(null);
   const [loadingProducts, setLoadingProducts] = useState(true);
-  const [view, setView] = useState<"dashboard" | "settings">("dashboard");
+  const [view, setView] = useState<"dashboard" | "campaigns" | "settings">("dashboard");
+  const [campaignRows, setCampaignRows] = useState<CampaignRow[] | null>(null);
   // Contadores pra ignorar respostas de fetch antigas que chegam depois de
   // uma mais nova (ex: trocar de produto/período rápido) — sem isso, uma
   // requisição lenta podia sobrescrever os dados certos com os de um filtro
   // anterior, fazendo alguma métrica "sumir" às vezes.
   const funnelReq = useRef(0);
   const summaryReq = useRef(0);
+  const campaignsReq = useRef(0);
 
   const returnedProductId = searchParams.get("productId");
   const metaConnected = searchParams.get("metaConnected") === "1";
@@ -143,10 +146,29 @@ function DashboardInner() {
       });
   }, [commonParams]);
 
+  const loadCampaigns = useCallback(() => {
+    if (!selectedId) return;
+    const params = new URLSearchParams({ productId: selectedId, period });
+    if (period === "custom") {
+      params.set("from", from);
+      params.set("to", to);
+    }
+    const reqId = ++campaignsReq.current;
+    fetch(`/api/campaigns?${params.toString()}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (reqId === campaignsReq.current) setCampaignRows(data.campaigns ?? []);
+      });
+  }, [selectedId, period, from, to]);
+
   useEffect(() => {
     loadFunnel();
     loadSummary();
   }, [loadFunnel, loadSummary]);
+
+  useEffect(() => {
+    loadCampaigns();
+  }, [loadCampaigns]);
 
   const selectedProduct = products.find((p) => p.id === selectedId) || null;
 
@@ -279,6 +301,28 @@ function DashboardInner() {
                 </div>
 
                 <TrackerIA funnel={funnel} summary={summary} />
+              </>
+            ) : view === "campaigns" ? (
+              <>
+                <FiltersBar
+                  period={period}
+                  onPeriodChange={setPeriod}
+                  from={from}
+                  to={to}
+                  onFromChange={setFrom}
+                  onToChange={setTo}
+                  campaigns={[]}
+                  campaign=""
+                  onCampaignChange={() => {}}
+                  platforms={[]}
+                  platform=""
+                  onPlatformChange={() => {}}
+                  adAccounts={[]}
+                  adAccount=""
+                  onAdAccountChange={() => {}}
+                  periodOnly
+                />
+                <CampaignsTable campaigns={campaignRows} />
               </>
             ) : (
               <>

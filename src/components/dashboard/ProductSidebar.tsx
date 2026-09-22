@@ -3,10 +3,11 @@
 import { useState } from "react";
 import type { Product } from "@/lib/types";
 
-type View = "dashboard" | "settings";
+type View = "dashboard" | "campaigns" | "settings";
 
 const NAV_ITEMS: { key: View; label: string; icon: string }[] = [
   { key: "dashboard", label: "Dashboard", icon: "🏠" },
+  { key: "campaigns", label: "Campanhas", icon: "📣" },
   { key: "settings", label: "Configurações", icon: "⚙️" },
 ];
 
