@@ -9,6 +9,7 @@ import AdSpendCard from "@/components/dashboard/AdSpendCard";
 import SummaryCards from "@/components/dashboard/SummaryCards";
 import MetaConnect from "@/components/dashboard/MetaConnect";
 import InstallSnippet from "@/components/dashboard/InstallSnippet";
+import TrackerIA from "@/components/dashboard/TrackerIA";
 import type { Product, PeriodKey, FunnelResponse, SummaryResponse } from "@/lib/types";
 
 function todayISO() {
@@ -276,6 +277,8 @@ function DashboardInner() {
                     <div style={{ color: "var(--text-muted)" }}>Carregando funil...</div>
                   )}
                 </div>
+
+                <TrackerIA funnel={funnel} summary={summary} />
               </>
             ) : (
               <>
